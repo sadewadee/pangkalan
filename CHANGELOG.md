@@ -2,6 +2,6 @@
 
         - Changed
             - Konfigurasi Vercel diubah untuk memisahkan rute API dan aset statis
+            - Middleware auth diubah: GET API publik, write routes tetap butuh auth
         - Fixed
             - Error parsing JSON di frontend saat respons HTML dikirim ke endpoint API
-

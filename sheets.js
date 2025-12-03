@@ -32,7 +32,7 @@ export async function initializeGoogleSheets() {
 }
 
 // Helper functions
-function getDefaultSheetName() {
+export function getDefaultSheetName() {
   const now = new Date();
   const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
                       'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -165,17 +165,23 @@ export async function getAllPelanggan(sheetName = null) {
     
     const rows = response.data.values || [];
     
-    return rows.map((row, index) => ({
-      id: row[0] || (index + 1).toString(),
-      nama: row[1] || '',
-      nik: row[2] || '',
-      domisili: row[3] || '',
-      minggu1: row[4] === 'TRUE',
-      minggu2: row[5] === 'TRUE',
-      minggu3: row[6] === 'TRUE',
-      minggu4: row[7] === 'TRUE',
-      minggu5: row[8] === 'TRUE',
-    }));
+    return rows
+      .filter(row => {
+        const nama = (row[1] || '').trim();
+        const nik = (row[2] || '').trim();
+        return nama.length > 0 && nik.length > 0; // Both must have values
+      })
+      .map((row, index) => ({
+        id: row[0] || (index + 1).toString(),
+        nama: row[1]?.trim() || '',
+        nik: row[2]?.trim() || '',
+        domisili: row[3] || '',
+        minggu1: row[4] === 'TRUE',
+        minggu2: row[5] === 'TRUE',
+        minggu3: row[6] === 'TRUE',
+        minggu4: row[7] === 'TRUE',
+        minggu5: row[8] === 'TRUE',
+      }));
   } catch (error) {
     console.error('Error getting sheet data:', error.message);
     throw new Error('Tidak dapat mengakses Google Sheets. Periksa Sheet ID dan permissions.');
@@ -235,9 +241,10 @@ export async function updatePelanggan(id, nama, nik, domisili) {
   }
   
   try {
+    const currentSheetName = getDefaultSheetName();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A2:I`, // A=No, B=Nama, C=NIK, D=Domisili, E-I=Minggu1-5
+      range: `${currentSheetName}!A2:I`,
     });
     
     const rows = response.data.values || [];
@@ -251,7 +258,7 @@ export async function updatePelanggan(id, nama, nik, domisili) {
     
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!B${rowNumber}:D${rowNumber}`,
+      range: `${currentSheetName}!B${rowNumber}:D${rowNumber}`,
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: [[nama, nik, domisili]],
@@ -323,9 +330,13 @@ export async function deletePelanggan(id) {
   }
   
   try {
+    const currentSheetName = getDefaultSheetName();
+    const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+    const sheet = (spreadsheet.data.sheets || []).find(s => s.properties.title === currentSheetName);
+    const targetSheetId = sheet?.properties?.sheetId;
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A2:A`, // Get IDs only
+      range: `${currentSheetName}!A2:A`,
     });
     
     const rows = response.data.values || [];
@@ -337,13 +348,16 @@ export async function deletePelanggan(id) {
     
     const rowNumber = rowIndex + 2;
     
+    if (!targetSheetId) {
+      throw new Error('Sheet tidak ditemukan');
+    }
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId: SHEET_ID,
       requestBody: {
         requests: [{
           deleteDimension: {
             range: {
-              sheetId: 0, // First sheet
+              sheetId: targetSheetId,
               dimension: 'ROWS',
               startIndex: rowNumber - 1,
               endIndex: rowNumber,

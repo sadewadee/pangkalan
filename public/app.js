@@ -78,6 +78,13 @@ function setupEventListeners() {
     const searchInput = document.getElementById('searchInput');
     searchInput.addEventListener('input', debounce(handleSearch, 300));
 
+    // Month selector functionality
+    const monthSelect = document.getElementById('monthSelect');
+    if (monthSelect) {
+        monthSelect.addEventListener('change', handleMonthChange);
+        loadAvailableMonths();
+    }
+
     // Close modal on outside click
     document.getElementById('modal').addEventListener('click', (e) => {
         if (e.target.id === 'modal') {
@@ -118,12 +125,13 @@ function debounce(func, wait) {
 // =========================================
 // DATA LOADING FUNCTIONS
 // =========================================
-async function loadPelanggan() {
+async function loadPelanggan(sheetName = null) {
     showLoading(true);
     hideEmptyState();
 
     try {
-        const result = await fetchJSON('/api/pelanggan');
+        const url = sheetName ? `/api/pelanggan/sheet/${encodeURIComponent(sheetName)}` : '/api/pelanggan';
+        const result = await fetchJSON(url);
 
         if (result.success) {
             pelangganData = result.data;
@@ -132,7 +140,8 @@ async function loadPelanggan() {
 
             // Show success message if data loaded
             if (pelangganData.length > 0) {
-                showSuccess(`Berhasil memuat ${pelangganData.length} data pelanggan`);
+                const sheetName = result.currentSheet || 'bulan ini';
+                showSuccess(`Berhasil memuat ${pelangganData.length} data pelanggan dari ${sheetName}`);
             }
         } else {
             showError('Gagal memuat data: ' + result.error);
@@ -576,6 +585,55 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// =========================================
+// MONTH SELECTION FUNCTIONS
+// =========================================
+
+async function loadAvailableMonths() {
+    try {
+        const result = await fetchJSON('/api/sheets');
+        
+        if (result.success && result.data) {
+            const monthSelect = document.getElementById('monthSelect');
+            monthSelect.innerHTML = '';
+            
+            const currentMonth = new Date();
+            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                              'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            const currentSheetName = `Pelanggan ${monthNames[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
+            
+            // Sort sheets: current month first, then by date
+            const sortedSheets = result.data.sort((a, b) => {
+                if (a.title === currentSheetName) return -1;
+                if (b.title === currentSheetName) return 1;
+                return a.title.localeCompare(b.title, 'id-ID', { numeric: true, sensitivity: 'base' });
+            });
+            
+            sortedSheets.forEach(sheet => {
+                const option = document.createElement('option');
+                option.value = sheet.title;
+                option.textContent = sheet.title.replace('Pelanggan ', '');
+                
+                if (sheet.title === currentSheetName) {
+                    option.selected = true;
+                }
+                
+                monthSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading available months:', error);
+        showError('Gagal memuat daftar bulan');
+    }
+}
+
+function handleMonthChange(event) {
+    const selectedSheet = event.target.value;
+    if (selectedSheet) {
+        loadPelanggan(selectedSheet);
+    }
+}
 
 // =========================================
 // CONSOLE INFO
