@@ -1,0 +1,5 @@
+/.env
+/docs.md
+/node_modules
+/test-checkbox-setup.js
+/test-ui-server.js

@@ -1,0 +1,21 @@
+{
+  "name": "pangkalan-lpg",
+  "version": "1.0.0",
+  "description": "Sistem pencatatan pelanggan pangkalan LPG 3kg - UI Friendly untuk Lansia",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "bun run server.js",
+    "dev": "bun run --watch server.js"
+  },
+  "keywords": ["lpg", "pangkalan", "pelanggan", "nik", "erp"],
+  "author": "Factory Droid",
+  "license": "MIT",
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-basic-auth": "^1.2.1",
+    "googleapis": "^128.0.0"
+  }
+}

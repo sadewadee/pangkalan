@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏪 Pangkalan Gas - Data Pelanggan</title>
+    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+        /* Force mobile viewport */
+        @-ms-viewport { width: device-width; }
+        @viewport { width: device-width; }
+        @-o-viewport { width: device-width; }
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+        .pelanggan-card {
+            -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+        }
+        .toggle-switch input:focus {
+            outline: 2px solid #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo">🏪</div>
+                    <div>
+                        <h1>PANGKALAN GAS</h1>
+                        <p class="subtitle">📋 Data Pelanggan</p>
+                    </div>
+                </div>
+                <div class="total-count">
+                    <span class="total-label">Total</span>
+                    <span class="total-number" id="totalCount">0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Search Section -->
+        <div class="search-section">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="Cari nama atau NIK pelanggan..."
+                    autocomplete="off"
+                >
+            </div>
+        </div>
+
+        <!-- Add Customer Button -->
+        <div class="add-section">
+            <button class="add-btn" id="addBtn">
+                <span class="add-icon">+</span>
+                TAMBAH PELANGGAN BARU
+            </button>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Sedang memuat data...</p>
+        </div>
+
+        <!-- Pelanggan List -->
+        <div class="pelanggan-list" id="pelangganList"></div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState">
+            <div class="empty-icon">📭</div>
+            <h2>Belum Ada Data Pelanggan</h2>
+            <p>Klik tombol "TAMBAH PELANGGAN BARU" untuk mulai mencatat data</p>
+            <button class="add-btn" onclick="showAddModal()">
+                <span class="add-icon">+</span>
+                TAMBAH PELANGGAN
+            </button>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="fab-container">
+        <button class="floating-add-btn" id="floatingAddBtn" onclick="showAddModal()">
+            +
+        </button>
+    </div>
+
+    <!-- Modal Add/Edit -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">📝 Tambah Pelanggan Baru</h2>
+                <button class="close-btn" onclick="closeModal()">×</button>
+            </div>
+            
+            <form id="pelangganForm">
+                <input type="hidden" id="pelangganId">
+                
+                <div class="form-group">
+                    <label for="namaPelanggan">👤 Nama Lengkap</label>
+                    <input 
+                        type="text" 
+                        id="namaPelanggan" 
+                        placeholder="Masukkan nama lengkap pelanggan"
+                        required
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="nikPelanggan">🆔 Nomor NIK (16 digit)</label>
+                    <input 
+                        type="text" 
+                        id="nikPelanggan" 
+                        placeholder="Masukkan 16 digit NIK"
+                        maxlength="16"
+                        pattern="[0-9]{16}"
+                        required
+                    >
+                    <div class="form-hint">💡 NIK wajib 16 digit angka</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="domisiliPelanggan">🏠 Domisili/Alamat</label>
+                    <input 
+                        type="text" 
+                        id="domisiliPelanggan" 
+                        placeholder="Masukkan alamat domisili"
+                        required
+                    >
+                    <div class="form-hint">💡 Contoh: Jakarta Pusat, RT.01/RW.02</div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeModal()">
+                        BATAL
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        ✅ SIMPAN
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div class="message-box" id="messageBox"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
