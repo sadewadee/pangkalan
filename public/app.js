@@ -4,9 +4,17 @@
 let pelangganData = [];
 let editingId = null;
 
+function getIcon(name, extraClass = '') {
+    const classes = ['icon', `icon-${name}`];
+    if (extraClass) {
+        classes.push(extraClass);
+    }
+    return `<svg class="${classes.join(' ')}" aria-hidden="true"><use href="#icon-${name}"></use></svg>`;
+}
+
 // Initialize application
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🏪 Pangkalan LPG App Started');
+    console.log('Pangkalan LPG App Started');
     
     // Setup event listeners
     setupEventListeners();
@@ -138,8 +146,8 @@ function renderPelanggan(filteredData = null) {
         list.innerHTML = '';
         if (filteredData) {
             list.innerHTML = `
-                <div style="text-align: center; padding: 40px; color: #666;">
-                    <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+                <div class="empty-search">
+                    <div class="empty-search-icon">${getIcon('search')}</div>
                     <h3>Tidak ada hasil pencarian</h3>
                     <p>Coba kata kunci lain atau kosongkan pencarian</p>
                 </div>
@@ -170,10 +178,10 @@ function createPelangganCard(pelanggan, index) {
                 <div class="pelanggan-number">${index + 1}</div>
                 <div class="pelanggan-actions">
                     <button class="btn-icon" onclick="editPelanggan('${pelanggan.id}')" title="Edit Data">
-                        ✏️
+                        ${getIcon('edit')}
                     </button>
                     <button class="btn-icon delete" onclick="deletePelanggan('${pelanggan.id}')" title="Hapus Data">
-                        🗑️
+                        ${getIcon('trash')}
                     </button>
                 </div>
             </div>
@@ -181,12 +189,12 @@ function createPelangganCard(pelanggan, index) {
             <div class="pelanggan-info">
                 <div class="pelanggan-nama">${pelanggan.nama}</div>
                 <div class="pelanggan-nik">
-                    <span class="nik-text">🆔 ${pelanggan.nik}</span>
+                    <span class="nik-text">${getIcon('id')} ${pelanggan.nik}</span>
                     <button class="nik-copy-btn" onclick="copyNIK('${pelanggan.nik}')" title="Copy NIK">
-                        📋
+                        ${getIcon('copy')}
                     </button>
                 </div>
-                <div class="pelanggan-domisili">🏠 ${pelanggan.domisili}</div>
+                <div class="pelanggan-domisili">${getIcon('home')} ${pelanggan.domisili}</div>
             </div>
             
             <div class="minggu-container">
@@ -218,7 +226,7 @@ function createPelangganCard(pelanggan, index) {
 // =========================================
 function showAddModal() {
     editingId = null;
-    document.getElementById('modalTitle').textContent = '📝 Tambah Pelanggan Baru';
+    document.getElementById('modalTitleText').textContent = 'Tambah Pelanggan Baru';
     document.getElementById('pelangganForm').reset();
     document.getElementById('modal').classList.add('active');
     
@@ -236,7 +244,7 @@ function editPelanggan(id) {
     }
     
     editingId = id;
-    document.getElementById('modalTitle').textContent = '✏️ Edit Data Pelanggan';
+    document.getElementById('modalTitleText').textContent = 'Edit Data Pelanggan';
     document.getElementById('namaPelanggan').value = pelanggan.nama;
     document.getElementById('nikPelanggan').value = pelanggan.nik;
     document.getElementById('domisiliPelanggan').value = pelanggan.domisili;
@@ -507,7 +515,7 @@ function copyNIK(nik) {
     try {
         const successful = document.execCommand('copy');
         if (successful) {
-            showSuccess(`✅ NIK ${nik} berhasil disalin!`);
+            showSuccess(`NIK ${nik} berhasil disalin!`);
         } else {
             throw new Error('Copy command failed');
         }
@@ -515,7 +523,7 @@ function copyNIK(nik) {
         // Fallback for modern browsers
         if (navigator.clipboard) {
             navigator.clipboard.writeText(nik).then(() => {
-                showSuccess(`✅ NIK ${nik} berhasil disalin!`);
+                showSuccess(`NIK ${nik} berhasil disalin!`);
             }).catch((error) => {
                 showError('Gagal menyalin NIK');
             });
@@ -566,5 +574,5 @@ document.head.appendChild(style);
 // =========================================
 // CONSOLE INFO
 // =========================================
-console.log('🏪 Pangkalan LPG v1.0');
-console.log('📞 Siap untuk mencatat data pelanggan!');
+console.log('Pangkalan LPG v1.0');
+console.log('Siap untuk mencatat data pelanggan!');

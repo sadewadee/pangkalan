@@ -157,9 +157,9 @@ app.get('/', (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log('🏪 Sistem Pangkalan LPG Siap!' );
-  console.log(`🌐 Akses di: http://localhost:${PORT}`);
-  console.log(`👤 Username: ${process.env.AUTH_USERNAME}`);
-  console.log(`🔑 Password: ${process.env.AUTH_PASSWORD}`);
-  console.log('\n📋 Siap mencatat pelanggan!');
+  console.log('Sistem Pangkalan LPG siap digunakan.');
+  console.log(`Akses di: http://localhost:${PORT}`);
+  console.log(`Username: ${process.env.AUTH_USERNAME}`);
+  console.log(`Password: ${process.env.AUTH_PASSWORD}`);
+  console.log('\nAplikasi siap mencatat pelanggan!');
 });

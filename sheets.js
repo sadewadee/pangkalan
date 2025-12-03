@@ -41,17 +41,17 @@ function getDefaultSheetName() {
 
 async function ensureSheetExists(sheetName) {
   try {
-    // Get existing sheets
     const spreadsheet = await sheets.spreadsheets.get({
       spreadsheetId: SHEET_ID,
     });
-    
-    const existingSheets = spreadsheet.data.sheets;
-    const sheetExists = existingSheets.some(sheet => sheet.properties.title === sheetName);
-    
-    if (!sheetExists) {
-      // Create new sheet
-      await sheets.spreadsheets.batchUpdate({
+
+    const existingSheet = (spreadsheet.data.sheets || [])
+      .find(sheet => sheet.properties.title === sheetName);
+
+    let targetSheetId = existingSheet?.properties?.sheetId;
+
+    if (!targetSheetId) {
+      const addSheetResponse = await sheets.spreadsheets.batchUpdate({
         spreadsheetId: SHEET_ID,
         requestBody: {
           requests: [{
@@ -60,15 +60,16 @@ async function ensureSheetExists(sheetName) {
                 title: sheetName,
                 gridProperties: {
                   rowCount: 1000,
-                  columnCount: 9
-                }
-              }
-            }
-          }]
-        }
+                  columnCount: 9,
+                },
+              },
+            },
+          }],
+        },
       });
-      
-      // Set headers for new sheet
+
+      targetSheetId = addSheetResponse.data.replies?.[0]?.addSheet?.properties?.sheetId;
+
       const headers = ['No', 'Nama', 'NIK', 'Domisili', 'Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4', 'Minggu 5'];
       await sheets.spreadsheets.values.update({
         spreadsheetId: SHEET_ID,
@@ -78,44 +79,46 @@ async function ensureSheetExists(sheetName) {
           values: [headers],
         },
       });
-      
-      // Apply checkbox data validation to minggu columns
-      const requests = [];
-      const mingguColumns = ['E', 'F', 'G', 'H', 'I'];
-      
-      for (const column of mingguColumns) {
-        requests.push({
-          repeatCell: {
-            range: {
-              sheetId: 0,
-              startRowIndex: 1, // Row 2 onwards
-              endRowIndex: 999,
-              startColumnIndex: column.charCodeAt(0) - 65, // A=0, B=1, C=2, D=3, E=4, etc.
-              endColumnIndex: column.charCodeAt(0) - 65 + 1,
-            },
-            cell: {
-              dataValidation: {
-                condition: {
-                  type: 'BOOLEAN',
-                  values: 'TRUE,FALSE'
-                }
-              }
-            }
-          }
-        });
-      }
-      
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId: SHEET_ID,
-        requestBody: {
-          requests: requests
-        }
-      });
-      
-      console.log(`✅ Sheet "${sheetName}" created with checkbox validation`);
+
+      console.log(`Sheet "${sheetName}" created`);
+    }
+
+    if (targetSheetId) {
+      await applyCheckboxValidation(targetSheetId);
     }
   } catch (error) {
     console.error('Error ensuring sheet exists:', error.message);
+    throw error;
+  }
+}
+
+async function applyCheckboxValidation(sheetId) {
+  try {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SHEET_ID,
+      requestBody: {
+        requests: [{
+          setDataValidation: {
+            range: {
+              sheetId,
+              startRowIndex: 1,
+              endRowIndex: 1000,
+              startColumnIndex: 4,
+              endColumnIndex: 9,
+            },
+            rule: {
+              condition: {
+                type: 'BOOLEAN',
+              },
+              strict: true,
+              showCustomUi: true,
+            },
+          },
+        }],
+      },
+    });
+  } catch (error) {
+    console.error('Failed to apply checkbox validation:', error.message);
     throw error;
   }
 }
