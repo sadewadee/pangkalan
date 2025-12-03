@@ -15,31 +15,44 @@ function getIcon(name, extraClass = '') {
 // Initialize application
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Pangkalan LPG App Started');
-    
+
     // Setup event listeners
     setupEventListeners();
-    
+
     // Load initial data
     loadPelanggan();
-    
+
     // Focus search input on load for easy search
     setTimeout(() => {
         document.getElementById('searchInput')?.focus();
     }, 500);
-    
+
     // Setup scroll event for FAB
     setupScrollListener();
 });
+
+async function fetchJSON(url, options) {
+    const res = await fetch(url, options);
+    const ct = res.headers.get('content-type') || '';
+    if (!res.ok) {
+        await res.text().catch(() => {});
+        throw new Error(`HTTP ${res.status}`);
+    }
+    if (!ct.includes('application/json')) {
+        throw new SyntaxError('Response bukan JSON');
+    }
+    return res.json();
+}
 
 function setupScrollListener() {
     const addSection = document.querySelector('.add-section');
     const floatingBtn = document.getElementById('floatingAddBtn');
     let lastScrollY = 0;
-    
+
     window.addEventListener('scroll', () => {
         const currentScrollY = window.pageYOffset || document.documentElement.scrollTop;
         const fabTriggerPoint = 200; // Show FAB after scrolling down 200px
-        
+
         if (currentScrollY > fabTriggerPoint) {
             // Hide regular add button, show FAB
             addSection.classList.add('hidden');
@@ -49,7 +62,7 @@ function setupScrollListener() {
             addSection.classList.remove('hidden');
             floatingBtn.style.display = 'none';
         }
-        
+
         lastScrollY = currentScrollY;
     });
 }
@@ -57,28 +70,28 @@ function setupScrollListener() {
 function setupEventListeners() {
     // Add button
     document.getElementById('addBtn').addEventListener('click', showAddModal);
-    
+
     // Form submission
     document.getElementById('pelangganForm').addEventListener('submit', handleSubmit);
-    
+
     // Search functionality
     const searchInput = document.getElementById('searchInput');
     searchInput.addEventListener('input', debounce(handleSearch, 300));
-    
+
     // Close modal on outside click
     document.getElementById('modal').addEventListener('click', (e) => {
         if (e.target.id === 'modal') {
             closeModal();
         }
     });
-    
+
     // Keyboard navigation
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeModal();
         }
     });
-    
+
     // Auto-format NIK input
     const nikInput = document.getElementById('nikPelanggan');
     if (nikInput) {
@@ -108,16 +121,15 @@ function debounce(func, wait) {
 async function loadPelanggan() {
     showLoading(true);
     hideEmptyState();
-    
+
     try {
-        const response = await fetch('/api/pelanggan');
-        const result = await response.json();
-        
+        const result = await fetchJSON('/api/pelanggan');
+
         if (result.success) {
             pelangganData = result.data;
             renderPelanggan();
             updateTotalCount(pelangganData.length);
-            
+
             // Show success message if data loaded
             if (pelangganData.length > 0) {
                 showSuccess(`Berhasil memuat ${pelangganData.length} data pelanggan`);
@@ -141,7 +153,7 @@ async function loadPelanggan() {
 function renderPelanggan(filteredData = null) {
     const list = document.getElementById('pelangganList');
     const data = filteredData || pelangganData;
-    
+
     if (data.length === 0) {
         list.innerHTML = '';
         if (filteredData) {
@@ -157,11 +169,11 @@ function renderPelanggan(filteredData = null) {
         }
         return;
     }
-    
+
     hideEmptyState();
-    
+
     list.innerHTML = data.map((pelanggan, index) => createPelangganCard(pelanggan, index)).join('');
-    
+
     // Add animation to cards
     const cards = list.querySelectorAll('.pelanggan-card');
     cards.forEach((card, i) => {
@@ -185,7 +197,7 @@ function createPelangganCard(pelanggan, index) {
                     </button>
                 </div>
             </div>
-            
+
             <div class="pelanggan-info">
                 <div class="pelanggan-nama">${pelanggan.nama}</div>
                 <div class="pelanggan-nik">
@@ -196,7 +208,7 @@ function createPelangganCard(pelanggan, index) {
                 </div>
                 <div class="pelanggan-domisili">${getIcon('home')} ${pelanggan.domisili}</div>
             </div>
-            
+
             <div class="minggu-container">
                 <div class="minggu-title">MINGGU PENGAMBILAN GAS</div>
                 <div class="minggu-grid">
@@ -206,9 +218,9 @@ function createPelangganCard(pelanggan, index) {
                                 Minggu Ke-<span class="minggu-number">${minggu}</span>
                             </span>
                             <label class="toggle-switch">
-                                <input 
-                                    type="checkbox" 
-                                    ${pelanggan['minggu' + minggu] ? 'checked' : ''} 
+                                <input
+                                    type="checkbox"
+                                    ${pelanggan['minggu' + minggu] ? 'checked' : ''}
                                     onchange="toggleMinggu('${pelanggan.id}', ${minggu}, this.checked)"
                                 >
                                 <span class="toggle-slider"></span>
@@ -229,7 +241,7 @@ function showAddModal() {
     document.getElementById('modalTitleText').textContent = 'Tambah Pelanggan Baru';
     document.getElementById('pelangganForm').reset();
     document.getElementById('modal').classList.add('active');
-    
+
     // Focus on first input
     setTimeout(() => {
         document.getElementById('namaPelanggan').focus();
@@ -242,14 +254,14 @@ function editPelanggan(id) {
         showError('Data pelanggan tidak ditemukan');
         return;
     }
-    
+
     editingId = id;
     document.getElementById('modalTitleText').textContent = 'Edit Data Pelanggan';
     document.getElementById('namaPelanggan').value = pelanggan.nama;
     document.getElementById('nikPelanggan').value = pelanggan.nik;
     document.getElementById('domisiliPelanggan').value = pelanggan.domisili;
     document.getElementById('modal').classList.add('active');
-    
+
     // Focus on first input
     setTimeout(() => {
         document.getElementById('namaPelanggan').focus();
@@ -260,7 +272,7 @@ function closeModal() {
     document.getElementById('modal').classList.remove('active');
     document.getElementById('pelangganForm').reset();
     editingId = null;
-    
+
     // Return focus to search
     setTimeout(() => {
         document.getElementById('searchInput').focus();
@@ -272,54 +284,52 @@ function closeModal() {
 // =========================================
 async function handleSubmit(e) {
     e.preventDefault();
-    
+
     const nama = document.getElementById('namaPelanggan').value.trim();
     const nik = document.getElementById('nikPelanggan').value.trim();
     const domisili = document.getElementById('domisiliPelanggan').value.trim();
-    
+
     // Validation
     if (!nama || !nik || !domisili) {
         showError('Nama, NIK, dan Domisili harus diisi lengkap!');
         return;
     }
-    
+
     if (nik.length !== 16) {
         showError('NIK harus tepat 16 digit angka!');
         document.getElementById('nikPelanggan').focus();
         return;
     }
-    
+
     if (!/^\d+$/.test(nik)) {
         showError('NIK hanya boleh angka!');
         document.getElementById('nikPelanggan').focus();
         return;
     }
-    
+
     // Check for duplicate NIK (except when editing)
-    const isDuplicate = pelangganData.some(p => 
+    const isDuplicate = pelangganData.some(p =>
         p.nik === nik && p.id !== editingId
     );
-    
+
     if (isDuplicate) {
         showError('NIK ini sudah terdaftar! Gunakan NIK yang berbeda.');
         document.getElementById('nikPelanggan').focus();
         return;
     }
-    
+
     showLoading(true);
-    
+
     try {
         const url = editingId ? `/api/pelanggan/${editingId}` : '/api/pelanggan';
         const method = editingId ? 'PUT' : 'POST';
-        
-        const response = await fetch(url, {
+
+        const result = await fetchJSON(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ nama, nik, domisili })
         });
-        
-        const result = await response.json();
-        
+
         if (result.success) {
             closeModal();
             await loadPelanggan();
@@ -341,26 +351,24 @@ async function handleSubmit(e) {
 async function deletePelanggan(id) {
     const pelanggan = pelangganData.find(p => p.id === id);
     if (!pelanggan) return;
-    
+
     // Better confirmation message with customer info
     if (!confirm(`Hapus data pelanggan berikut?\n\nNama: ${pelanggan.nama}\nNIK: ${pelanggan.nik}\n\nData yang dihapus tidak dapat dikembalikan!`)) {
         return;
     }
-    
+
     // Additional confirmation for safety
     if (!confirm('YAKIN akan menghapus data ini?')) {
         return;
     }
-    
+
     showLoading(true);
-    
+
     try {
-        const response = await fetch(`/api/pelanggan/${id}`, {
+        const result = await fetchJSON(`/api/pelanggan/${id}`, {
             method: 'DELETE'
         });
-        
-        const result = await response.json();
-        
+
         if (result.success) {
             await loadPelanggan();
             showSuccess(result.message || 'Data berhasil dihapus!');
@@ -380,22 +388,20 @@ async function deletePelanggan(id) {
 // =========================================
 async function toggleMinggu(id, minggu, checked) {
     const mingguText = `Minggu ke-${minggu}`;
-    
+
     try {
-        const response = await fetch(`/api/pelanggan/${id}/minggu/${minggu}`, {
+        const result = await fetchJSON(`/api/pelanggan/${id}/minggu/${minggu}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ checked })
         });
-        
-        const result = await response.json();
-        
+
         if (result.success) {
             // Update local data
             const pelanggan = pelangganData.find(p => p.id === id);
             if (pelanggan) {
                 pelanggan['minggu' + minggu] = checked;
-                
+
                 // Show subtle feedback
                 if (checked) {
                     showSuccess(`${mingguText} berhasil ditandai!`);
@@ -419,18 +425,18 @@ async function toggleMinggu(id, minggu, checked) {
 // =========================================
 function handleSearch(e) {
     const query = e.target.value.toLowerCase().trim();
-    
+
     if (!query) {
         renderPelanggan();
         return;
     }
-    
+
     const filtered = pelangganData.filter(p => {
         const searchInNama = p.nama.toLowerCase().includes(query);
         const searchInNik = p.nik.includes(query);
         return searchInNama || searchInNik;
     });
-    
+
     renderPelanggan(filtered);
 }
 
@@ -478,10 +484,10 @@ function showError(message) {
 function showMessage(message, type) {
     const messageBox = document.getElementById('messageBox');
     if (!messageBox) return;
-    
+
     messageBox.textContent = message;
     messageBox.className = `message-box ${type} show`;
-    
+
     // Auto hide after 4 seconds
     setTimeout(() => {
         messageBox.classList.remove('show');
@@ -507,11 +513,11 @@ function copyNIK(nik) {
     const tempInput = document.createElement('input');
     tempInput.value = nik;
     tempInput.style.cssText = 'position: absolute; left: -9999px; top: -9999px;';
-    
+
     document.body.appendChild(tempInput);
     tempInput.select();
     tempInput.setSelectionRange(0, 16); // For mobile
-    
+
     try {
         const successful = document.execCommand('copy');
         if (successful) {
@@ -563,7 +569,7 @@ style.textContent = `
             transform: translateY(0);
         }
     }
-    
+
     @keyframes fadeIn {
         from { opacity: 0; }
         to { opacity: 1; }
