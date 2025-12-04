@@ -25,7 +25,15 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
-app.use(express.static('public'));
+
+// Basic auth instance
+const basicAuthMiddleware = basicAuth({
+  users: {
+    [process.env.AUTH_USERNAME]: process.env.AUTH_PASSWORD
+  },
+  challenge: true,
+  realm: 'Sistem Pangkalan LPG'
+});
 
 // Authentication middleware with cookie support
 const authMiddleware = (req, res, next) => {
@@ -34,24 +42,26 @@ const authMiddleware = (req, res, next) => {
     return next();
   }
 
-  // Otherwise use basic auth
-  basicAuth({
-    users: {
-      [process.env.AUTH_USERNAME]: process.env.AUTH_PASSWORD
-    },
-    challenge: true,
-    realm: 'Sistem Pangkalan LPG',
-    // After successful auth, set cookie
-    getResponse: (req, res) => {
-      res.cookie('auth', 'authenticated', { maxAge: 24 * 60 * 60 * 1000 }); // 24 hours
+  // Otherwise use basic auth, then set cookie on success
+  basicAuthMiddleware(req, res, (err) => {
+    if (err) {
+      return next(err);
     }
-  })(req, res, next);
+    // Set cookie after successful basic auth
+    res.cookie('auth', 'authenticated', { 
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      httpOnly: true,
+      sameSite: 'lax'
+    });
+    next();
+  });
 };
 
-// Apply auth middleware only to write operations
+// Protect static files with auth
+app.use(authMiddleware, express.static('public'));
 
 // API Routes
-app.get('/api/pelanggan', async (req, res) => {
+app.get('/api/pelanggan', authMiddleware, async (req, res) => {
   try {
     // Always use current month sheet, ignore any sheet parameter
     const data = await getAllPelanggan(); // No parameter = current month
@@ -62,7 +72,7 @@ app.get('/api/pelanggan', async (req, res) => {
 });
 
 // Get all available sheets
-app.get('/api/sheets', async (req, res) => {
+app.get('/api/sheets', authMiddleware, async (req, res) => {
   try {
     const sheets = await getAllSheets();
     res.json({ success: true, data: sheets });
@@ -72,7 +82,7 @@ app.get('/api/sheets', async (req, res) => {
 });
 
 // Get pelanggan by sheet name (secure - only allows Pelanggan sheets)
-app.get('/api/pelanggan/sheet/:sheetName', async (req, res) => {
+app.get('/api/pelanggan/sheet/:sheetName', authMiddleware, async (req, res) => {
   try {
     const { sheetName } = req.params;
     
@@ -171,7 +181,7 @@ app.get('/api/logout', (req, res) => {
 });
 
 // Default route - serve the main page
-app.get('/', (req, res) => {
+app.get('/', authMiddleware, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

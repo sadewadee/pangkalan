@@ -31,9 +31,22 @@ document.addEventListener('DOMContentLoaded', () => {
     setupScrollListener();
 });
 
-async function fetchJSON(url, options) {
+async function fetchJSON(url, options = {}) {
+    // Always include credentials for auth cookies
+    options.credentials = 'same-origin';
+    
     const res = await fetch(url, options);
     const ct = res.headers.get('content-type') || '';
+    
+    // Handle 401 - trigger login popup by reloading page
+    if (res.status === 401) {
+        showError('Sesi login habis. Memuat ulang halaman...');
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+        throw new Error('Unauthorized - reloading for login');
+    }
+    
     if (!res.ok) {
         await res.text().catch(() => {});
         throw new Error(`HTTP ${res.status}`);
